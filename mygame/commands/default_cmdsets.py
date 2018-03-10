@@ -18,6 +18,7 @@ own cmdsets by inheriting from them or directly from `evennia.CmdSet`.
 from evennia import default_cmds
 from evennia import CmdSet
 from commands import command
+from commands import skillcommand
 
 # 人物角色命令集： 查看属性，攻击，拾取战利品
 class CharacterCmdSet(default_cmds.CharacterCmdSet):
@@ -42,7 +43,17 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         # self.add(command.CmdEditNPC)
         self.add(command.CmdLoot)
         # self.add(command.CmdMobOnOff())
-        self.add(command.CmdSell)
+        # self.add(command.CmdSell)
+        self.add(command.CmdEquipment)
+        self.add(command.CmdInventory)
+        self.add(command.CmdEquip)
+        self.add(command.CmdPractise)
+        self.add(command.CmdStudy)
+        self.add(command.CmdBaseSkill)
+        self.add(command.CmdSpecialSkill)
+        self.add(command.CmdStop)
+        self.add(command.CmdEquipSkill)
+        # self.add(skillcommand.CmdZhongji)
 
 class AccountCmdSet(default_cmds.AccountCmdSet):
     """
@@ -124,10 +135,37 @@ class MonsterCmdSet(CmdSet):
 # 装备的命令集： 装备，取下
 class EquipmentCmdSet(CmdSet):
     def at_cmdset_creation(self):
-        self.add(command.CmdEquip())
+        # self.add(command.CmdEquip())
+        pass
 
 # 物品的命令集：
 class ObjectCmdSet(CmdSet):
     def at_cmdset_creation(self):
+        self.add(command.CmdSell())
         pass
 
+class MerchantRoomCmdSet(CmdSet):
+    def at_cmdset_creation(self):
+        self.add(command.CmdSell())
+
+class InstanceRoomCmdSet(CmdSet):
+    def at_cmdset_creation(self):
+        # self.add(command.CmdSearch())
+        pass
+
+class InstanceRoomCanBeSearchedCmdSet(CmdSet):
+    def at_cmdset_creation(self):
+        self.add(command.CmdExplore())
+
+class SkillCmdSet(CmdSet):
+    def at_cmdset_creation(self):
+        # self.add(skillcommand.CmdZhongji)
+        pass
+
+class BaseQuanJiaoCmdSet(CmdSet):
+    def at_cmdset_creation(self):
+        self.add(skillcommand.CmdZhongji)
+
+class TaiZuChangQuanCmdSet(CmdSet):
+    def at_cmdset_creation(self):
+        self.add(skillcommand.CmdTaiZuBaShi)

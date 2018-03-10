@@ -1,49 +1,19 @@
 #coding=utf-8
-"""
-Characters
-
-Characters are (by default) Objects setup to be puppeted by Accounts.
-They are what you "see" in game. The Character class in this module
-is setup to be the "default" character type created by the default
-creation commands.
-
-"""
 from evennia import DefaultCharacter
 from evennia import TICKER_HANDLER
+from evennia import logger
 from evennia import search_object
 from evennia import create_object
-from evennia import logger
-from commands.default_cmdsets import MonsterCmdSet
-
 import random
 
-from settings.equipmentdef import EquipmentDefinition
+from commands.default_cmdsets import CharacterCmdSet
+from settings.masterdef.huashanmasters import HuaShanMaster
 from utils.general import determine_one_hit
 
 
-class Monster(DefaultCharacter):
-    """
-    The Character defaults to reimplementing some of base Object's hook methods with the
-    following functionality:
+class Master(DefaultCharacter):
 
-    at_basetype_setup - always assigns the DefaultCmdSet to this object type
-                    (important!)sets locks so character cannot be picked up
-                    and its commands only be called by itself, not anyone else.
-                    (to change things, use at_object_creation() instead).
-    at_after_move(source_location) - Launches the "look" command after every move.
-    at_post_unpuppet(account) -  when Account disconnects from the Character, we
-                    store the current location in the pre_logout_location Attribute and
-                    move it to a None-location so the "unpuppeted" character
-                    object does not need to stay on grid. Echoes "Account has disconnected"
-                    to the room.
-    at_pre_puppet - Just before Account re-connects, retrieves the character's
-                    pre_logout_location Attribute and move it back on the grid.
-    at_post_puppet - Echoes "AccountName has entered the game" to the room.
-
-    """
-    BASE_MAGIC_FOUND = 0.99
-    AVAILABLE_DROP_ITEMS = [EquipmentDefinition.SWORD_IRONSWORD, EquipmentDefinition.SWORD_SHARPSWORD, EquipmentDefinition.SWORD_CHAMPIONSWORD]
-    BASE_ATTACK_SPEED = 4
+    DEFINITION = HuaShanMaster.GAOGENMING
 
     def at_init(self):
         """
@@ -51,84 +21,82 @@ class Monster(DefaultCharacter):
         the AI state.
         """
         # The AI state machine (not persistent).
-        self.ndb.is_attacking = False
         self.ndb.is_immortal = self.db.immortal or self.db.is_dead
+        self.ndb.is_attacking = False
+        self.ndb.is_idle = True
 
     def at_object_creation(self):
-        """
-        字段解释：
-            level 等级（每级增加1点属性点）
-            experience 经验（决定等级）
-            strength 力量（决定伤害）
-            agility 敏捷（决定攻击速度，暴击率，躲闪）
-            stamina 体力（决定最大生命值）
-            damage 伤害（由属性和装备决定）
-            defence 防御（由属性和装备决定）
-            attack_speed 攻击速度（由属性和装备决定）
-            critical_strike_hit 暴击几率（由属性和装备决定）
-            full_health 最大生命值 (由属性和装备决定)
-            health 当前生命值
-            is_dead 是否处于死亡状态
-            engaged_in_combat 是否处于战斗状态
-        """
-        self.cmdset.add(MonsterCmdSet, permanent=True)
+        super(Master, self).at_object_creation()
+        self.cmdset.add(CharacterCmdSet, permanent=True)
 
-        self.db.level = 1
-        self.db.exp_when_killed = 1000
+        # 姓名，等级
+        self.db.gender = self.DEFINITION.get("gender")
+        self.db.name = self.DEFINITION.get("name")
+        self.db.rank = self.DEFINITION.get("rank")
+        # 技能和技能上限等级
+        self.db.skills = self.DEFINITION.get("skills")
+        self.db.skill_level = self.DEFINITION.get("skill_level")
 
-        # self.db.strength = 10
-        # self.db.agility = 10
-        # self.db.stamina = 10
+        # 伤害，防御，攻击速度，命中，暴击率，躲闪，招架
+        self.db.damage = self.DEFINITION.get("damage")
+        self.db.defend = self.DEFINITION.get("defend")
+        self.db.attack_speed = self.DEFINITION.get("attack_speed")
+        self.db.critical_hit = self.DEFINITION.get("critical_hit")
+        self.db.parry = self.DEFINITION.get("parry")
+        self.db.avoid = self.DEFINITION.get("avoid")
+        self.db.hit = self.DEFINITION.get("hit")
 
-        self.db.damage = 10
-        self.db.defend = 10
-        self.db.attack_speed = self.BASE_ATTACK_SPEED
-        self.db.critical_hit = 0.01
-        self.db.parry = 10
-        self.db.avoid = 10
-        self.db.hit = 10
+        # 生命值, 内力
+        self.db.full_health = self.DEFINITION.get("full_health")
+        self.db.full_energy = self.DEFINITION.get("full_energy")
 
+        # 人物的当前状态
+        self.db.is_dead = self.DEFINITION.get("is_dead")
+        self.db.immortal = self.DEFINITION.get("immortal")
 
-        self.db.full_health = 100
-        self.db.health = self.db.full_health
+        # 可掉落的物品 和寻宝几率
+        self.db.available_drop_items = self.DEFINITION.get("available_drop_items")
+        self.db.drop_rate = self.DEFINITION.get("magic_found")
 
-        # 怪物状态
-        self.db.is_dead = False
-        self.db.immortal = False
-
-        # 重生时间间隔
-        self.db.reborn_interval = 300
-
-        # 当前敌人
+        # 当前状态
         self.db.current_enemy = None
+        self.db.health = self.db.full_health
+        self.db.energy = self.db.full_energy
+        # 掉落的物品存放在此
+        self.db.drop_item_list = []
 
-        # 最后一次定时器间隔和hook key
+        # 最后一次定时器的间隔和方法
         self.db.last_ticker_interval = None
         self.db.last_hook_key = None
 
-        # 掉落的物品存放在此
-        self.db.drop_item_list = []
-        # 可掉落的物品
-        self.db.available_drop_items = self.AVAILABLE_DROP_ITEMS
-        # 掉落物品品质几率
-        self.db.drop_rate = self.BASE_MAGIC_FOUND
+        #  根据skill_list生成对象的技能列表
+        self.generate_skills()
+
+    def get_abilities(self):
+        """
+        Simple access method to return ability
+        scores as a tuple (str,agi,mag)
+        """
+        return self.db.level, self.db.strength, self.db.agility, self.db.stamina, self.db.health
 
     def return_appearance(self, looker):
         """
         The return from this method is what
         looker sees when looking at this object.
         """
-        text = super(Monster, self).return_appearance(looker)
-        cscore = " (等级: %s, 生命值: %s/%s\n " \
-                 "攻击：%s 防御：%s 攻速：%s\n" \
-                 "招架：%s 躲闪：%s 命中：%s 暴击：%s)" % \
-                 ( self.db.level, self.db.health, self.db.full_health,
-                   self.db.damage, self.db.defend, self.db.attack_speed,
-                   self.db.parry, self.db.avoid, self.db.hit, self.db.critical_hit)
+        text = super(Master, self).return_appearance(looker)
+        cscore = "(性别: %s 等级: %s 气血: %s/%s 内力: %s/%s\n" % \
+                 (self.db.gender, str(self.db.rank.get("name")), self.db.health, self.db.full_health, self.db.energy, self.db.full_energy)
+        cscore += "攻击: %s  命中: %s 攻速: %s 暴击: %s 防御: %s  躲闪: %s 招架: %s\n" % \
+                  (self.db.damage, self.db.hit, self.db.attack_speed, self.db.critical_hit, self.db.defend, self.db.avoid, self.db.parry)
+
+        for skill in self.db.skill_list:
+            cscore += (skill.db.name + " " + str(skill.db.level) + "级/"+skill.db.level_desc + "\n")
         if "\n" in text:
             # text is multi-line, add score after first line
             first_line, rest = text.split("\n", 1)
-            text = first_line + cscore + "\n" + rest
+            # text = first_line + cscore + "\n" + rest
+            text = first_line + cscore + "\n"
         else:
             # text is only one line; add score to end
             text += cscore
@@ -168,7 +136,6 @@ class Monster(DefaultCharacter):
         self.db.last_ticker_interval = interval
         self.db.last_hook_key = hook_key
         if not stop:
-            # set the new ticker
             TICKER_HANDLER.add(interval=interval,
                                callback=getattr(self, hook_key), idstring=idstring)
 
@@ -242,25 +209,7 @@ class Monster(DefaultCharacter):
         #         self.start_attacking()
 
     def do_attack(self):
-        # # 解决定时器延时问题：在自身死亡后因为定时器延时触发，还会再攻击对方一次
-        # if self.db.is_dead:
-        #     return
-        # cmd_string = "attack"
-        # # 判断是否已有敌人目标而且目标是否在自己房间内，否则在房间内搜索任意敌人并发动攻击，如果都没有找到，则恢复为不动状态
-        # if self.db.current_enemy and self.db.current_enemy in self.location.contents_get(exclude=self):
-        #     target = self.db.current_enemy
-        # else:
-        #     self.db.current_enemy = self._find_target(self.location)
-        #     target = self.db.current_enemy
-        #
-        # if target:
-        #     if (target.db.health <= 0):
-        #         self.start_idle()
-        #     else:
-        #         self.execute_cmd("%s %s" % (cmd_string, target))
-        # else:
-        #     self.start_idle()
-
+        cmd_string = "attack"
         # 判断是否已有敌人目标而且目标是否在自己房间内，否则在房间内搜索任意敌人并发动攻击，如果都没有找到，则恢复为不动状态
         if self.db.current_enemy and self.db.current_enemy in self.location.contents_get(exclude=self):
             target = self.db.current_enemy
@@ -274,8 +223,7 @@ class Monster(DefaultCharacter):
             if (target.db.health <= 0):
                 self.start_idle()
             else:
-                # self.execute_cmd("%s %s" % (cmd_string, target))
-                target.at_hit(self)
+                self.execute_cmd("%s %s" % (cmd_string, target))
         else:
             self.start_idle()
 
@@ -289,7 +237,6 @@ class Monster(DefaultCharacter):
         the ticker and do nothing more.
         """
         self.ndb.is_attacking = False
-        self.db.health = self.db.full_health
         self._set_ticker(None, None, stop=True)
 
     def set_dead(self):
@@ -300,11 +247,13 @@ class Monster(DefaultCharacter):
         self.drop_objects()
         self._set_ticker(self.db.reborn_interval, "set_alive")
 
+
     def set_alive(self):
         self.db.is_dead = False
         self.ndb.is_attacking = False
         self.ndb.is_immortal = self.db.immortal
         self.db.health = self.db.full_health
+        self.db.energy = self.db.full_energy
         self.db.desc = self.key
         self.db.drop_item_list = []
         if not self.location:
@@ -313,3 +262,16 @@ class Monster(DefaultCharacter):
 
     def drop_objects(self):
         self.db.drop_item_list.append(random.choice(self.db.available_drop_items))
+
+    # 此方法在npc被创建是调用，生成该NPC技能列表和等级
+    def generate_skills(self):
+        self.db.skill_list = []
+        for skill in self.db.skills:
+            skill_created = create_object(skill.get("classpath"),
+                                         key=skill.get("name"),
+                                         location=self,
+                                         locks="edit:id(%i) and perm(Builders);call:id(%i)" % (
+                                         self.id, self.id))
+            skill_created.levels_up(self, self.db.skill_level)
+            self.db.skill_list.append(skill_created)
+

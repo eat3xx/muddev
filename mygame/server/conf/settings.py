@@ -28,7 +28,7 @@ put secret game- or server-specific settings in secret_settings.py.
 from evennia.settings_default import *
 
 ######################################################################
-# Evennia base server config
+# Evennia base server settings
 ######################################################################
 
 # This is the name of your game. Make it catchy!

@@ -1,52 +1,38 @@
 #coding=utf-8
-
+from settings.equipmentdef import EquipmentCategory, WeaponCategory, EquipmentDefinition
 from weapon import Weapon
 import random
 
-class Longsword(Weapon):
+class IronSword(Weapon):
     """
-    长剑，基础剑类武器
+    铁剑，基础剑类武器
     """
-    # 武器基本类型
-    WEAPON_TYPE = "sword"
-    # 基础伤害
-    BASE_DAMAGE = 10
-    # 基础攻击速度
-    BASE_ATTACK_SPEED = 5
-    # 基础暴击几率
-    BASE_CRITICAL_HIT = 0
+    DEFINITION = EquipmentDefinition.SWORD_IRONSWORD
 
     def at_object_creation(self):
-        super(Longsword, self).at_object_creation()
+        super(IronSword, self).at_object_creation()
 
-class Sharpsword(Weapon):
+class SharpSword(Weapon):
     """
     利剑，中级剑类武器
     """
-    # 武器基本类型
-    WEAPON_TYPE = "sword"
-    # 基础伤害
-    BASE_DAMAGE = 20
-    # 基础攻击速度
-    BASE_ATTACK_SPEED = 5
-    # 基础暴击几率
-    BASE_CRITICAL_HIT = 3
+    DEFINITION = EquipmentDefinition.SWORD_SHARPSWORD
 
     def at_object_creation(self):
-        super(Sharpsword, self).at_object_creation()
+        super(SharpSword, self).at_object_creation()
 
-class Championsword(Weapon):
+class ChampionSword(Weapon):
     """
     冠军剑，高级剑类武器
     """
-    # 武器基本类型
-    WEAPON_TYPE = "sword"
-    # 基础伤害
-    BASE_DAMAGE = 30
-    # 基础攻击速度
-    BASE_ATTACK_SPEED = 5
-    # 基础暴击几率
-    BASE_CRITICAL_HIT = 6
+    DEFINITION = EquipmentDefinition.SWORD_CHAMPIONSWORD
 
     def at_object_creation(self):
-        super(Championsword, self).at_object_creation()
+        super(ChampionSword, self).at_object_creation()
+
+# if __name__ == '__main__':
+#     a = Longsword()
+#     print 3
+#     print type(a)
+#     print 1
+#     print a.__class__.__name__

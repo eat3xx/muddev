@@ -1,3 +1,5 @@
+#coding=utf-8
+
 """
 Object
 
@@ -11,7 +13,6 @@ inheritance.
 
 """
 from evennia import DefaultObject
-from commands.default_cmdsets import ObjectCmdSet
 
 
 class Object(DefaultObject):
@@ -80,7 +81,7 @@ class Object(DefaultObject):
      msg(text=None, **kwargs)
      msg_contents(message, exclude=None, from_obj=None, **kwargs)
      move_to(destination, quiet=False, emit_to_obj=None, use_destination=True)
-     copy(new_key=None)
+     instance(new_key=None)
      delete()
      is_typeclass(typeclass, exact=False)
      swap_typeclass(new_typeclass, clean_attributes=False, no_default=True)
@@ -161,5 +162,15 @@ class Object(DefaultObject):
                                  object speaks
 
      """
+    def reset(self):
+        """
+        销毁武器
+        """
+        if self.location.has_account and self.home == self.location:
+            self.location.msg_contents("%s 消失了，就好像从未存在过 ..." % self.key)
+            self.delete()
+        else:
+            self.location = self.home
+
 
     pass

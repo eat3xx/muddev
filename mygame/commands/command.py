@@ -7,9 +7,17 @@ Commands describe the input the account can do to the game.
 """
 
 from evennia import Command as BaseCommand
+from evennia import EvTable
 from evennia import create_object
-from config import itemquality
-import random
+
+from settings.skilldef import SkillDefinition
+from typeclasses.equipment.equipment import Equipment
+from typeclasses.item.skill.huashan.skills import SpecialSkill
+from typeclasses.item.skill.skill import Skill
+from utils import general
+from utils.general import determine_quality, get_equiped_equipments, get_equiped_equipment_by_type, \
+    get_equiped_special_skill_by_type, holds
+from utils.skillcreator import create_skill
 
 
 class Command(BaseCommand):
@@ -41,7 +49,7 @@ class Command(BaseCommand):
 #   evennia.commands.default.muxcommand.MuxCommand.
 #
 # If you want to make sweeping changes to default commands you can
-# uncomment this copy of the MuxCommand parent and add
+# uncomment this instance of the MuxCommand parent and add
 #
 #   COMMAND_DEFAULT_CLASS = "commands.command.MuxCommand"
 #
@@ -250,60 +258,41 @@ class CmdAttack(Command):
         if not self.args:
             caller.msg("Usage: %s %s" % (self.key, "target"))
             return
-        # FIX ME: unicode object has no attribute trip(), since remove trip().
-        # target = caller.search(self.args.trip())
         target = caller.search(self.args.strip())
         if not target:
             return
-
-        # if obj.db.type == "sword":
-        #     ostring = "你%s向%s" % ("刺", target.key)
-        #     tstring = "%s%s向你" % (caller.key, "刺")
-        # if obj.db.type == "knife":
-        #     ostring = "你%s向%s" % ("砍", target.key)
-        #     tstring = "%s%s向你" % (caller.key, "砍")
-
         if not target.ndb.is_immortal:
-            # caller.msg(ostring + "，命中!")
-            # target.msg(tstring + "，命中!")
-            target.at_hit(caller)
+            caller.db.current_enemy = target
+            caller.start_attacking()
+            # target.at_hit(caller)
         else:
             caller.msg("不可攻击该目标")
 
 class CmdEquip(Command):
     key = "equip"
     aliases = ["unequip"]
-    help_category = "equipment"
+    help_category = "mush"
+    arg_regex = r"\s|$"
 
     def func(self):
+        caller = self.caller
+        if not self.args:
+            caller.msg("Usage: %s %s" % (self.key, "target"))
+            return
+        target = caller.search(self.args.strip())
+        if not target:
+            return
         if self.cmdstring == "equip":
-            self.change_on_equip()
+            # 得到人物当前同等位置装备，如果有则先取下
+            equipment = get_equiped_equipment_by_type(caller, target.db.type)
+            if equipment:
+                # put_on_equipment(caller, equipment, reverse=True)
+                equipment.at_equip(caller, reverse=True)
+            caller.msg("你装备上了%s" % target)
+            target.at_equip(caller, reverse=False)
         else:
-            self.change_on_unequip()
-
-    def change_on_equip(self):
-        self.obj.db.is_equiped = True
-        self.caller.msg("你装备上了%s" % self.obj.key)
-
-        self.caller.db.damage += self.obj.db.damage
-        self.caller.db.attack_speed = self.obj.db.speed
-        self.caller.db.critical_hit += self.obj.db.critical_hit
-
-        self.caller.set_strength(self.obj.db.strength_points)
-        self.caller.set_agility(self.obj.db.agility_points)
-        self.caller.set_stamina(self.obj.db.stamina_points)
-
-    def change_on_unequip(self):
-        self.obj.db.is_equiped = False
-        self.caller.msg("你脱下了%s" % self.obj.key)
-
-        self.caller.db.damage -= self.obj.db.damage
-        self.caller.db.attack_speed = self.caller.BASE_ATTACK_SPEED
-        self.caller.db.critical_hit -= self.obj.db.critical_hit
-
-        self.caller.set_strength(-self.obj.db.strength_points)
-        self.caller.set_agility(-self.obj.db.agility_points)
-        self.caller.set_stamina(-self.obj.db.stamina_points)
+            caller.msg("你脱下了%s" % target)
+            target.at_equip(caller, reverse=True)
 
 class CmdSell(Command):
     key = "sell"
@@ -316,46 +305,21 @@ class CmdSell(Command):
         if not self.args:
             caller.msg("Usage: %s %s" % (self.key, "target"))
             return
-        # target = caller.search(self.args.strip())
-        target = self.args.strip()
+        target = caller.search(self.args.strip())
+        # target = self.args.strip()
         if not target:
             return
+
+        if target.db.is_equiped == True:
+            self.caller.msg("售卖前请先取下装备")
+            return
+        target.delete()
         cmd_string = "del/force"
         # print "%s %s" % (cmd_string, target)
-        # print "%s %s" % (cmd_string, target.id)
         # print "%s %s" % (cmd_string, target.key)
-        caller.execute_cmd("%s %s" % (cmd_string, target))
-
-# class CmdAttack(Command):
-#     """
-#     issues an attack
-#
-#     Usage:
-#         +attack
-#
-#     This will calculate a new combat score based on your Power.
-#     Your combat score is visible to everyone in the same location.
-#     """
-#     key = "+attack"
-#     help_category = "mush"
-#
-#     def func(self):
-#         "Calculate the random score between 1-10*Power"
-#         caller = self.caller
-#         power = caller.db.power
-#         if not power:
-#             # this can happen if caller is not of
-#             # our custom Character typeclass
-#             power = 1
-#         combat_score = random.randint(1, 10 * power)
-#         caller.db.combat_score = combat_score
-#
-#         # announce
-#         message = "%s +attack%s with a combat score of %s!"
-#         caller.msg(message % ("You", "", combat_score))
-#         caller.location.msg_contents(message %
-#                                      (caller.key, "s", combat_score),
-#                                      exclude=caller)
+        # target_str = "#"+str(target.id)
+        # print "%s %s" % (cmd_string, target_str)
+        # caller.execute_cmd("%s %s" % (cmd_string, target_str))
 
 class CmdCreateNPC(Command):
     """
@@ -504,32 +468,22 @@ class CmdLoot(Command):
             return
         for item in items:
             # 生成基础物品类型
-            item_created = create_object("typeclasses.equipment.weapon.sword." + item,
-                                 key=item,
+            item_created = create_object(item.get("classpath"),
+                                 # key = "长剑",
+                                 key = item.get("name"),
+                                 # key=item.split(".")[-1],
                                  location=self.caller,
                                  # locks="edit:id(%i) and perm(Builders)" % self.caller.id)
                                  locks="edit:id(%i) and perm(Builders);call:id(%i)" % (self.caller.id, self.caller.id))
-            # 决定物品品质
+            item_created.key = item_created.db.name
+            # 决定最终掉率
             rate_target = target.db.drop_rate
             rate_caller = self.caller.db.magic_found
-            rate = rate_target * (1 + rate_caller/100)
+            rate = rate_target * (1 + rate_caller/100.00)
 
-            # 产生一个0-1之间的随机数
-            random_number = random.random()
-            # 如果几率为20%, 则有20%几率为绿色，10%几率为蓝色，4%几率为紫色，1%几率为橙色
-            if random_number < rate:
-                quality = itemquality.Epic()
-            else:
-                if random_number < rate / 5:
-                    quality = itemquality.Elite()
-                else:
-                    if random_number < rate / 2:
-                        quality = itemquality.Rare()
-                    else:
-                        if random_number < rate:
-                            quality = itemquality.Polish()
-                        else:
-                            quality = itemquality.Plain()
+            # 根据掉率决定最终品质
+            quality = determine_quality(rate)
+
             # 将品质附加到物品上，加强物品属性
             item_created.set_quality(quality)
 
@@ -568,3 +522,273 @@ class CmdMobOnOff(Command):
             mob.set_alive()
         else:
             mob.set_dead()
+
+class CmdInventory(Command):
+    """
+    view inventory
+
+    Usage:
+      inventory
+      inv
+
+    Shows your inventory.
+    """
+    key = "inventory"
+    aliases = ["inv", "i"]
+    locks = "cmd:all()"
+    arg_regex = r"$"
+
+    def func(self):
+        """check inventory"""
+        items = self.caller.contents
+        if not items:
+            string = "你包里什么物品都没有\n"
+        else:
+            table = EvTable(border="header")
+            for item in items:
+                if not item.db.is_equiped and not isinstance(item, Skill):
+                    table.add_row("|C%s|n" % item.name, item.db.desc or "")
+            string = "|w背包里的物品:\n%s" % table + "\n"
+        string += self.caller.db.money.show()
+        self.caller.msg(string)
+
+class CmdEquipment(Command):
+    """
+    view inventory
+
+    Usage:
+      inventory
+      inv
+
+    Shows your inventory.
+    """
+    key = "equipment"
+    aliases = ["equipment"]
+    locks = "cmd:all()"
+    arg_regex = r"$"
+
+    def func(self):
+        """check inventory"""
+        caller = self.caller
+        equipments = get_equiped_equipments(caller)
+        if not equipments:
+            string = "你没有装备任何东西"
+        else:
+            table = EvTable(border="header")
+            for item in equipments:
+                if isinstance(item, Equipment):
+                    table.add_row("|C%s|n" % item.name, item.db.desc or "")
+            string = "|w你身上的装备:\n%s" % table
+        self.caller.msg(string)
+
+class CmdStudy(Command):
+    """
+    学习技能
+
+    Usage:
+    learn jibenquanjiao master
+
+    跟师傅学习技能
+    """
+    key = "study"
+    aliases = ["study"]
+    locks = "cmd:all()"
+    help_category = "mush"
+
+    def parse(self):
+        if not self.args:
+            self.caller.msg("Usage: %s %s %s" % (self.key, "skill", "master"))
+            return
+        args = self.args.strip()
+        self.skill, self.master = [part.strip() for part in args.rsplit()]
+
+    def func(self):
+        caller = self.caller
+        if not self.args:
+            self.caller.msg("Usage: %s %s" % (self.key, "master"))
+            return
+
+        skill_dict = SkillDefinition.get_skill_by_name(self.skill)
+        skill_classpath = skill_dict.get("classpath")
+        if holds(caller, self.skill):
+            pass
+        else:
+            create_object(skill_classpath,
+                          key=self.skill,
+                          location=caller,
+                          locks="edit:id(%i) and perm(Builders);call:id(%i)" % (caller.id, caller.id))
+        skill = caller.search(self.skill.strip())
+        master = caller.search(self.master.strip())
+        if skill and master:
+            caller.start_studying(skill, master)
+
+class CmdPractise(Command):
+    """
+    练习技能
+
+    Usage:
+    practise jibenquanjiao
+
+    练习技能
+    """
+    key = "practise"
+    aliases = ["practise"]
+    locks = "cmd:all()"
+    help_category = "mush"
+
+    def func(self):
+        caller = self.caller
+        if not self.args:
+            self.caller.msg("Usage: %s %s" % (self.key, "target"))
+            return
+        target = caller.search(self.args.strip())
+        caller.start_pracising(target)
+
+class CmdExplore(Command):
+    key = "explore"
+    aliases = ["explore"]
+    locks = "cmd:all()"
+    help_category = "room"
+
+    def func(self):
+        # 没有提供目标参数，退出
+        if not self.args:
+            self.caller.msg("Usage: %s %s" % (self.key, "location"))
+            return
+        target = self.caller.search(self.args.strip())
+
+        target.at_explore()
+
+        # 获取目标掉落物品列表
+        items = target.db.drop_item_list
+        # 清空目标掉落物品列表
+        target.db.drop_item_list = []
+        if not items:
+            self.caller.msg("没有找到任何东西")
+            return
+        for item in items:
+            # 生成基础物品类型
+            item_created = create_object("typeclasses.equipment.weapon.sword." + item,
+                                 key=item,
+                                 location=self.caller,
+                                 # locks="edit:id(%i) and perm(Builders)" % self.caller.id)
+                                 locks="edit:id(%i) and perm(Builders);call:id(%i)" % (self.caller.id, self.caller.id))
+            # 决定物品品质
+            rate_target = target.db.drop_rate
+            rate_caller = self.caller.db.magic_found
+            rate = rate_target * (1 + rate_caller/100.00)
+            # 根据掉率决定最终品质
+            quality = determine_quality(rate)
+            # 将品质附加到物品上，加强物品属性
+            item_created.set_quality(quality)
+
+            self.caller.msg("你获得了" + item_created.key)
+
+class CmdEquipSkill(Command):
+    """
+    装备武功
+
+    Usage:
+    equipskill skillname
+    """
+    key = "equipskill"
+    aliases = ["unequipskill"]
+    locks = "cmd:all()"
+    help_category = "mush"
+
+    def func(self):
+        caller = self.caller
+        if not self.args:
+            self.caller.msg("Usage: %s %s" % (self.key, "skillname"))
+            return
+        target = caller.search(self.args.strip())
+        if not target or not isinstance(target, SpecialSkill):
+            caller.msg("你只能装备或者卸下特殊武功")
+            return
+        if self.cmdstring == "equipskill":
+            # 得到人物当前同等位置技能，如果有则先卸载
+            special_skill = get_equiped_special_skill_by_type(caller, target.db.type)
+            if special_skill:
+                special_skill.at_equip(caller, reverse=True)
+            target.at_equip(caller, reverse=False)
+            caller.msg("已装备%s为%s" % (target.db.name, target.db.type))
+        else:
+            caller.msg("已卸载%s" % target.db.name)
+            target.at_equip(caller, reverse=True)
+
+class CmdBaseSkill(Command):
+    """
+    view inventory
+
+    Usage:
+      inventory
+      inv
+
+    Shows your inventory.
+    """
+    key = "baseskill"
+    aliases = ["baseskill"]
+    locks = "cmd:all()"
+    arg_regex = r"$"
+
+    def func(self):
+        """check inventory"""
+        caller = self.caller
+        items = general.get_all_base_skills(caller)
+        if not items:
+            string = "你目前未掌握任何基础武功"
+        else:
+            table = EvTable(border="header")
+            for item in items:
+                table.add_row("|C%s|n" % item.name, str(item.db.level) + "级/" + item.db.level_desc or "")
+            string = "|w你掌握的基础武功:\n%s" % table
+        self.caller.msg(string)
+
+class CmdSpecialSkill(Command):
+    """
+    view inventory
+
+    Usage:
+      inventory
+      inv
+
+    Shows your inventory.
+    """
+    key = "specialskill"
+    aliases = ["specialskill"]
+    locks = "cmd:all()"
+    arg_regex = r"$"
+
+    def func(self):
+        """check inventory"""
+        caller = self.caller
+        items = general.get_all_special_skills(caller)
+        if not items:
+            string = "你目前未掌握任何特殊武功"
+        else:
+            table = EvTable(border="header")
+            for item in items:
+                if item.db.is_equiped == True:
+                    equiped = "(已装备为%s)" % item.db.type
+                    table.add_row("|C%s|n" % item.name, str(item.db.level) + "级/" + item.db.level_desc, equiped or "")
+                else:
+                    table.add_row("|C%s|n" % item.name, str(item.db.level) + "级/" + item.db.level_desc or "")
+            string = "|w你掌握的特殊武功:\n%s" % table
+        self.caller.msg(string)
+
+class CmdStop(Command):
+    """
+    停止当前动作
+
+    Usage:
+    stop
+
+    """
+    key = "stop"
+    aliases = ["stop"]
+    locks = "cmd:all()"
+    help_category = "mush"
+
+    def func(self):
+        caller = self.caller
+        caller.start_idle()
