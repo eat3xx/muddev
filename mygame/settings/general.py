@@ -1,11 +1,12 @@
 #coding=utf-8
 
 class Color(object):
-    WHITE = "white"
-    GREEN = "green"
-    BLUE = "blue"
-    PURPLE = "purple"
-    ORANGE = "orange"
+    WHITE = "|555"
+    GREEN = "|050"
+    BLUE = "|005"
+    PURPLE = "|102"
+    ORANGE = "|520"
+    RED = "|500"
 
 class Gender(object):
     MALE = "男"

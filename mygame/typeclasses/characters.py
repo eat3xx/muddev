@@ -23,7 +23,6 @@ from settings.rank import apprentice
 from typeclasses.item.money import Money
 from utils.general import determine_one_hit, get_all_skills
 
-
 class Character(DefaultCharacter):
     """
     The Character defaults to reimplementing some of base Object's hook methods with the
@@ -102,7 +101,7 @@ class Character(DefaultCharacter):
         self.db.money = Money()
 
         # 技能上限
-        self.db.level = 100
+        self.db.level = 1
 
         # 人物的状态
         self.db.is_dead = False
@@ -437,9 +436,10 @@ class Character(DefaultCharacter):
             self.move_to(self.home)
 
     def gain_exp(self, exp, potential):
-        self.msg("你获得了%s点经验%s点潜能" % (exp, potential))
-        self.db.experience += exp
-        self.db.potential += potential
+        if exp and potential:
+            self.msg("你获得了%s点经验 %s点潜能" % (exp, potential))
+            self.db.experience += exp
+            self.db.potential += potential
 
     def rank_up(self):
         index = rank.rank_list.index(self.db.rank)

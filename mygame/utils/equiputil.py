@@ -1,19 +1,19 @@
 #coding=utf-8
 
-def at_equip_skill(obj, caller, reverse=False):
-    at_equip_equipment(obj, caller, reverse=reverse)
+def at_equip_skill(obj, caller, equip=True):
+    at_equip_equipment(obj, caller, equip=equip)
 
-def at_equip_equipment(obj, caller, reverse=False):
+def at_equip_equipment(obj, caller, equip=True):
     """
     装备上物品，并把装备上的属性添加到人物身上。
     当 reverse=True 的时候把装备上的属性从人物身上取消。
     :param caller: 人物，命令调用者
     :param self: 装备物品
-    :param reverse: 开关，控制装备或者脱下
+    :param equip: 开关，控制装备或者脱下
     :return: 无
     """
-    if reverse:
-        obj.db.is_equiped = False
+    obj.db.is_equiped = equip
+    if not equip:
         if obj.db.strength_points:
             if hasattr(caller, "add_strength"):
                 caller.add_strength(-obj.db.strength_points)
@@ -48,7 +48,6 @@ def at_equip_equipment(obj, caller, reverse=False):
             if hasattr(caller, "add_hit"):
                 caller.add_hit(-obj.db.hit_points)
     else:
-        obj.db.is_equiped = True
         if obj.db.strength_points:
             if hasattr(caller, "add_strength"):
                 caller.add_strength(obj.db.strength_points)

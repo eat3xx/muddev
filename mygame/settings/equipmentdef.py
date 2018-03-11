@@ -2,24 +2,24 @@
 
 #  装备的分类
 class EquipmentCategory(object):
-    HELMET = "helmet"
-    NECKLACE = "necklace"
-    CLOTH = "cloth"
-    CLOAK = "cloak"
-    GLOVE = "glove"
-    RING = "ring"
-    ACCESSORY = "accessory"
-    BELT = "belt"
-    PANT = "pant"
-    SHOE = "shoe"
-    WEAPON = "weapon"
-    HIDDEN_WEAPON = "hidden_weapon"
+    WEAPON = "武器"
+    HELMET = "头部"
+    NECKLACE = "项链"
+    CLOTH = "衣服"
+    CLOAK = "披风"
+    GLOVE = "护手"
+    RING = "戒指"
+    ACCESSORY = "饰品"
+    BELT = "腰带"
+    PANT = "裤子"
+    SHOE = "鞋子"
+    HIDDEN_WEAPON = "暗器"
 
 # 武器的分类
 class WeaponCategory(object):
-    SWORD = "sword"
-    BLADE = "blade"
-    STICK = "stick"
+    SWORD = "剑"
+    BLADE = "刀"
+    STICK = "棍"
 
 class EquipmentDefinition(object):
 

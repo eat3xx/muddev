@@ -16,19 +16,19 @@ from settings.general import Color
 
 
 class QualityName(object):
-    PLAIN = "plain"
-    POLISH = "polish"
-    RARE = "rare"
-    ELITE = "elite"
-    EPIC = "epic"
+    PLAIN = "普通"
+    POLISH = "高级"
+    RARE = "稀有"
+    ELITE = "精英"
+    EPIC = "史诗"
 
 qualities = ["plain", "polish", "rare", "elite", "epic"]
 
 class Quality():
-    WORDS = None
-    NAME = None
-    COLOR = None
     ID = 0
+    NAME = QualityName.PLAIN
+    COLOR = Color.WHITE
+    WORDS= None
 
     def __init__(self):
         self.id = self.ID

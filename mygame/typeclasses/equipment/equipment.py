@@ -22,6 +22,7 @@ class Equipment(Object):
 
         # 武器颜色
         self.db.color = None
+        self.db.quality = None
 
         # 是否被装备上
         self.db.is_equiped = False
@@ -46,8 +47,8 @@ class Equipment(Object):
         The return from this method is what
         looker sees when looking at this object.
         """
-        text = super(Equipment, self).return_appearance(looker)
-        cscore = "类型: %s (%s)" % (self.db.type, self.db.color) + "\n"  + \
+        # text = super(Equipment, self).return_appearance(looker)
+        cscore = "%s%s|n  %s" % (self.db.color, self.db.name, self.db.type) + "\n"  + \
                  "  伤害: %s" % self.db.damage_points + "\n" + \
                  "  臂力 + %s" % self.db.strength_points + "\n" + \
                  "  身法 + %s" % self.db.agility_points + "\n" + \
@@ -59,17 +60,18 @@ class Equipment(Object):
                  "  躲闪 + %s" % self.db.avoid_points + "\n" + \
                  "  招架 + %s" % self.db.parry_points + "\n" + \
                  "  命中 + %s" % self.db.hit_points + "\n"
-        if "\n" in text:
-            # text is multi-line, add score after first line
-            first_line, rest = text.split("\n", 1)
-            text = first_line + cscore + "\n" + rest
-        else:
-            # text is only one line; add score to end
-            text += cscore
-        return text
+        # if "\n" in text:
+        #     # text is multi-line, add score after first line
+        #     first_line, rest = text.split("\n", 1)
+        #     text = first_line + cscore + "\n" + rest
+        # else:
+        #     # text is only one line; add score to end
+        #     text += cscore
+        return cscore
 
     def set_quality(self, quality):
         self.db.color = quality.getColor()
+        self.db.quality = quality.getName()
         words = quality.getWords()
 
         # 以下属性在装备时会添加到人物属性
@@ -84,7 +86,7 @@ class Equipment(Object):
         if words.has_key(AttrWord.DAMAGE):
             self.db.damage_points = words.get(AttrWord.DAMAGE)
             if self.db.base_damage:
-                self.db.damage_points += self.base_damage
+                self.db.damage_points += self.db.base_damage
         if words.has_key(AttrWord.DEFEND):
             self.db.defend_points = words.get(AttrWord.DEFEND)
         if words.has_key(AttrWord.ATTACK_SPEED):

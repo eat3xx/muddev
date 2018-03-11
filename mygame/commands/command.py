@@ -287,12 +287,12 @@ class CmdEquip(Command):
             equipment = get_equiped_equipment_by_type(caller, target.db.type)
             if equipment:
                 # put_on_equipment(caller, equipment, reverse=True)
-                equipment.at_equip(caller, reverse=True)
+                equipment.at_equip(caller, equip=False)
             caller.msg("你装备上了%s" % target)
-            target.at_equip(caller, reverse=False)
+            target.at_equip(caller, equip=True)
         else:
             caller.msg("你脱下了%s" % target)
-            target.at_equip(caller, reverse=True)
+            target.at_equip(caller, equip=False)
 
 class CmdSell(Command):
     key = "sell"
@@ -707,14 +707,20 @@ class CmdEquipSkill(Command):
             return
         if self.cmdstring == "equipskill":
             # 得到人物当前同等位置技能，如果有则先卸载
+            if target.db.is_equiped == True:
+                caller.msg("你不能重复装备已装备的武功")
+                return
             special_skill = get_equiped_special_skill_by_type(caller, target.db.type)
             if special_skill:
-                special_skill.at_equip(caller, reverse=True)
-            target.at_equip(caller, reverse=False)
+                special_skill.at_equip(caller, equip=False)
+            target.at_equip(caller, equip=True)
             caller.msg("已装备%s为%s" % (target.db.name, target.db.type))
         else:
+            if target.db.is_equiped == False:
+                caller.msg("你无法卸载为装备的武功")
+                return
             caller.msg("已卸载%s" % target.db.name)
-            target.at_equip(caller, reverse=True)
+            target.at_equip(caller, equip=False)
 
 class CmdBaseSkill(Command):
     """

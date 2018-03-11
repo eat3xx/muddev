@@ -6,6 +6,7 @@ from typeclasses.equipment.equipment import Equipment
 from typeclasses.item.skill.baseskills import BaseSkill
 from typeclasses.item.skill.huashan.skills import SpecialSkill
 from typeclasses.item.skill.skill import Skill
+from settings import quality
 
 
 def get_all_equipments(caller):
@@ -133,19 +134,19 @@ def determine_quality(rate):
     random_number = random.random()
     # 如果几率为20%, 则有20%几率为绿色，10%几率为蓝色，4%几率为紫色，1%几率为橙色
     if random_number < rate:
-        quality = quality.EpicWeapon()
+        return_quality = quality.EpicWeapon()
     else:
         if random_number < rate / 5:
-            quality = quality.EliteWeapon()
+            return_quality = quality.EliteWeapon()
         else:
             if random_number < rate / 2:
-                quality = quality.RareWeapon()
+                return_quality = quality.RareWeapon()
             else:
                 if random_number < rate:
-                    quality = quality.PolishWeapon()
+                    return_quality = quality.PolishWeapon()
                 else:
-                    quality = quality.PlainWeapon()
-    return quality
+                    return_quality = quality.PlainWeapon()
+    return return_quality
 
 def determine_one_hit(be_attacked, attacker):
     """
@@ -198,6 +199,8 @@ def determine_one_hit(be_attacked, attacker):
         be_attacked.location.msg_contents("%s 重重倒下了" % be_attacked.key, exclude=be_attacked)
         be_attacked.msg("你已经死亡")
         attacker.msg("%s 已经死亡" % be_attacked.key)
+        attacker.msg("111")
+        attacker.gain_exp(be_attacked.db.exp_when_killed, be_attacked.db.exp_when_killed)
         be_attacked.set_dead()
     else:
         if not be_attacked.ndb.is_attacking:

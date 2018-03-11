@@ -114,16 +114,22 @@ class Skill(Object):
             return SkillDesc.CHAO_FNA_RU_SHENG
 
     def level_up(self, caller):
-        self.at_equip(caller, reverse=True)
-        self.db.level += 1
-        self.set_words()
-        self.at_equip(caller, reverse=False)
+        # 如果未装备，则技能升级
+        if not self.db.is_equiped:
+            self.db.level += 1
+            self.set_words()
+        # 如果已经装备，则先卸下技能，技能升级，再装上技能。以显示实时变化
+        else:
+            self.at_equip(caller, equip=False)
+            self.db.level += 1
+            self.set_words()
+            self.at_equip(caller, equip=True)
 
     def levels_up(self, caller, levels):
         for i in range(self.db.level, levels):
             self.level_up(caller)
 
-    def at_equip(self, caller, reverse=False):
+    def at_equip(self, caller, equip=True):
         """
         装备上物品，并把装备上的属性添加到人物身上。
         当 reverse=True 的时候把装备上的属性从人物身上取消。
@@ -133,7 +139,7 @@ class Skill(Object):
         :return: 无
         """
         self.set_words()
-        at_equip_skill(self, caller, reverse=reverse)
+        at_equip_skill(self, caller, equip=equip)
         # if reverse:
         #     self.db.is_equiped = False
         #     if self.db.strength_points:
