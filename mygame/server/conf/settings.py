@@ -63,3 +63,17 @@ try:
     from server.conf.secret_settings import *
 except ImportError:
     print "secret_settings.py file not found or failed to import."
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'evennia',
+        'USER': 'evennia',
+        'PASSWORD': 'welcome1',
+        'HOST': 'localhost',  # or an IP Address that your DB is hosted on
+        'PORT': '',  # use default port
+    }
+}
+
+INSTALLED_APPS += ('web.character',)
+INSTALLED_APPS += ('web.chargen',)

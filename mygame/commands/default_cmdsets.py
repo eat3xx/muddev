@@ -53,7 +53,6 @@ class CharacterCmdSet(default_cmds.CharacterCmdSet):
         self.add(command.CmdSpecialSkill)
         self.add(command.CmdStop)
         self.add(command.CmdEquipSkill)
-        # self.add(skillcommand.CmdZhongji)
 
 class AccountCmdSet(default_cmds.AccountCmdSet):
     """

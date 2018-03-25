@@ -7,6 +7,7 @@ class Color(object):
     PURPLE = "|102"
     ORANGE = "|520"
     RED = "|500"
+    YELLOW = "|440"
 
 class Gender(object):
     MALE = "男"

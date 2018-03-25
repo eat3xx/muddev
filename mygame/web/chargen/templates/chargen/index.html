@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+{% if user.is_authenticated %}
+    <h1>Character Generation</h1>
+    {% if sub_apps %}
+        <ul>
+        {% for sub_app in sub_apps %}
+            <li><a href="/chargen/{{ sub_app.app_id }}/">{{ sub_app.char_name }}</a></li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>You haven't submitted any character applications.</p>
+    {% endif %}
+  {% else %}
+    <p>Please <a href="{% url 'login'%}">login</a>first.<a/></p>
+{% endif %}
+{% endblock %}

@@ -264,7 +264,6 @@ class CmdAttack(Command):
         if not target.ndb.is_immortal:
             caller.db.current_enemy = target
             caller.start_attacking()
-            # target.at_hit(caller)
         else:
             caller.msg("不可攻击该目标")
 
@@ -547,9 +546,9 @@ class CmdInventory(Command):
             table = EvTable(border="header")
             for item in items:
                 if not item.db.is_equiped and not isinstance(item, Skill):
-                    table.add_row("|C%s|n" % item.name, item.db.desc or "")
+                    table.add_row("%s%s|n" % (item.db.color, item.name), item.db.desc or "")
             string = "|w背包里的物品:\n%s" % table + "\n"
-        string += self.caller.db.money.show()
+        string += general.show_me_the_money(self.caller.db.money)
         self.caller.msg(string)
 
 class CmdEquipment(Command):
@@ -746,7 +745,7 @@ class CmdBaseSkill(Command):
         else:
             table = EvTable(border="header")
             for item in items:
-                table.add_row("|C%s|n" % item.name, str(item.db.level) + "级/" + item.db.level_desc or "")
+                table.add_row("%s%s|n" % (item.db.color, item.name), str(item.db.level) + "级/" + item.db.level_desc or "")
             string = "|w你掌握的基础武功:\n%s" % table
         self.caller.msg(string)
 
@@ -778,7 +777,7 @@ class CmdSpecialSkill(Command):
                     equiped = "(已装备为%s)" % item.db.type
                     table.add_row("|C%s|n" % item.name, str(item.db.level) + "级/" + item.db.level_desc, equiped or "")
                 else:
-                    table.add_row("|C%s|n" % item.name, str(item.db.level) + "级/" + item.db.level_desc or "")
+                    table.add_row("%s%s|n" % (item.db.color, item.name), str(item.db.level) + "级/" + item.db.level_desc or "")
             string = "|w你掌握的特殊武功:\n%s" % table
         self.caller.msg(string)
 

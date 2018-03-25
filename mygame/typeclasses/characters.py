@@ -17,11 +17,12 @@ import random
 
 from commands.default_cmdsets import CharacterCmdSet
 from settings import rank
-from settings.general import Gender
+from settings.general import Gender, Color
 from settings.level_exp import exp_dict
 from settings.rank import apprentice
-from typeclasses.item.money import Money
-from utils.general import determine_one_hit, get_all_skills
+from utils import general
+from utils.general import determine_one_hit, show_me_the_money
+
 
 class Character(DefaultCharacter):
     """
@@ -66,6 +67,7 @@ class Character(DefaultCharacter):
         # 姓名，等级
         self.db.gender = self.GENDER
         self.db.rank = self.RANK
+        self.db.level = 1
 
         # 经验， 潜能，精力
         self.db.experience = 1000
@@ -98,10 +100,7 @@ class Character(DefaultCharacter):
         self.db.energy = self.db.full_energy
 
         # 金钱
-        self.db.money = Money()
-
-        # 技能上限
-        self.db.level = 1
+        self.db.money = 0
 
         # 人物的状态
         self.db.is_dead = False
@@ -279,56 +278,19 @@ class Character(DefaultCharacter):
 
     def at_hit(self, attacker):
         determine_one_hit(self, attacker)
-        # # 敌方伤害值
-        # damage_taken = attacker.db.damage
-        # # 是否命中标志
-        # binggo = False
-        # rate = 0.00
-        # # 判定是否招架成功, 命中几率为命中除以两倍的招架
-        # rate = attacker.db.hit/float(self.db.parry)/2.00
-        # if random.random() < rate:
-        #     # 判定是否躲闪成功，命中几率为命中除以两倍的躲闪
-        #     rate = attacker.db.hit / float(self.db.avoid) / 2.00
-        #     if random.random() < rate:
-        #         binggo = True
-        #     else:
-        #         attacker.msg("你的攻击被 %s 躲闪" % self.key)
-        #         self.msg("你躲闪了 %s 的攻击" % (attacker.key))
-        # else:
-        #     attacker.msg("你的攻击被 %s 格挡" % self.key)
-        #     self.msg("你格挡了 %s 的攻击" % (attacker.key))
-        #
-        # # 如果命中，则减去自身防御值后为最终伤害
-        # is_critical = False
-        # if binggo:
-        #     # 判断敌方是否暴击，如暴击则伤害加倍
-        #     if random.random() < attacker.db.critical_hit:
-        #         damage_taken *= 2
-        #         is_critical = True
-        #     # 减去自身防御
-        #     damage_taken -= self.db.defend
-        #     if damage_taken > 0:
-        #         self.db.health -= damage_taken
-        #         if is_critical:
-        #             attacker.msg("你对 %s 造成了 %s 点暴击伤害" % (self.key, damage_taken))
-        #             self.msg("%s 对你造成了 %s 点暴击伤害" % (attacker.key, damage_taken))
-        #         else:
-        #             attacker.msg("你对 %s 造成了 %s 点伤害" % (self.key, damage_taken))
-        #             self.msg("%s 对你造成了 %s 点伤害" % (attacker.key, damage_taken))
-        #     else:
-        #         attacker.msg("你的攻击未能对 %s 造成任何伤害" % self.key)
-        #         self.msg("%s 的攻击未对你造成任何伤害" % attacker.key)
-        #
-        # if self.db.health <= 0:
-        #     self.location.msg_contents("%s 重重倒下了" % self.key, exclude=self)
-        #     self.msg("你已经死亡")
-        #     attacker.msg("%s 已经死亡" % self.key)
-        #     self.set_dead()
-        # else:
-        #     if not self.ndb.is_attacking:
-        #         self.db.current_enemy = attacker
-        #         attacker.msg("%s 开始对你发起攻击" % self.key)
-        #         self.start_attacking()
+
+        if self.db.health <= 0:
+            self.location.msg_contents("%s 重重倒下了" % self.key, exclude=self)
+            self.msg("你已经死亡")
+            attacker.msg("%s 已经死亡" % self.key)
+            # attacker.gain_exp(self.db.exp_when_killed, self.db.exp_when_killed)
+            # attacker.gain_money(self.db.money_when_killed)
+            self.set_dead()
+        else:
+            if not self.ndb.is_attacking:
+                self.db.current_enemy = attacker
+                attacker.msg("%s 开始对你发起攻击" % self.key)
+                self.start_attacking()
 
     def do_attack(self):
         cmd_string = "attack"
@@ -352,6 +314,7 @@ class Character(DefaultCharacter):
 
     def start_attacking(self):
         self.ndb.is_attacking = True
+        self.do_attack()
         self._set_ticker(self.db.attack_speed, "do_attack")
 
     def do_practise(self, skill):
@@ -441,6 +404,11 @@ class Character(DefaultCharacter):
             self.db.experience += exp
             self.db.potential += potential
 
+    def gain_money(self, money):
+        if money:
+            self.msg("你获得了%s" % show_me_the_money(money))
+            self.db.money += money
+
     def rank_up(self):
         index = rank.rank_list.index(self.db.rank)
         try:
@@ -471,12 +439,6 @@ class Character(DefaultCharacter):
                 self.db.skill_level = level
                 return
         self.msg("已达到技能等级上限")
-
-    def finish_instance(self, instance):
-        pass
-
-    def _set_special_skill(self, skill, unset=False):
-        skill.apply()
 
     # 以下这些命令是改变人物属性，如果改变的是基础属性的话同时相应的改变战斗属性
     def add_strength(self, point):

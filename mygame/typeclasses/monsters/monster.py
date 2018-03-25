@@ -75,10 +75,7 @@ class Monster(DefaultCharacter):
 
         self.db.level = 1
         self.db.exp_when_killed = 1000
-
-        # self.db.strength = 10
-        # self.db.agility = 10
-        # self.db.stamina = 10
+        self.db.money_when_killed = 1000
 
         self.db.damage = 10
         self.db.defend = 10
@@ -190,77 +187,20 @@ class Monster(DefaultCharacter):
 
     def at_hit(self, attacker):
         determine_one_hit(self, attacker)
-        # # 敌方伤害值
-        # damage_taken = attacker.db.damage
-        # # 是否命中标志
-        # binggo = False
-        # rate = 0.00
-        # # 判定是否招架成功, 命中几率为命中除以两倍的招架
-        # rate = attacker.db.hit/float(self.db.parry)/2.00
-        # if random.random() < rate:
-        #     # 判定是否躲闪成功，命中几率为命中除以两倍的躲闪
-        #     rate = attacker.db.hit / float(self.db.avoid) / 2.00
-        #     if random.random() < rate:
-        #         binggo = True
-        #     else:
-        #         attacker.msg("你的攻击被 %s 躲闪" % self.key)
-        #         self.msg("你躲闪了 %s 的攻击" % (attacker.key))
-        # else:
-        #     attacker.msg("你的攻击被 %s 格挡" % self.key)
-        #     self.msg("你格挡了 %s 的攻击" % (attacker.key))
-        #
-        # # 如果命中，则减去自身防御值后为最终伤害
-        # is_critical = False
-        # if binggo:
-        #     # 判断敌方是否暴击，如暴击则伤害加倍
-        #     if random.random() < attacker.db.critical_hit:
-        #         damage_taken *= 2
-        #         is_critical = True
-        #     # 减去自身防御
-        #     damage_taken -= self.db.defend
-        #     if damage_taken > 0:
-        #         self.db.health -= damage_taken
-        #         if is_critical:
-        #             attacker.msg("你对 %s 造成了 %s 点暴击伤害" % (self.key, damage_taken))
-        #             self.msg("%s 对你造成了 %s 点暴击伤害" % (attacker.key, damage_taken))
-        #         else:
-        #             attacker.msg("你对 %s 造成了 %s 点伤害" % (self.key, damage_taken))
-        #             self.msg("%s 对你造成了 %s 点伤害" % (attacker.key, damage_taken))
-        #     else:
-        #         attacker.msg("你的攻击未能对 %s 造成任何伤害" % self.key)
-        #         self.msg("%s 的攻击未对你造成任何伤害" % attacker.key)
-        #
-        # if self.db.health <= 0:
-        #     self.location.msg_contents("%s 重重倒下了" % self.key, exclude=self)
-        #     self.msg("你已经死亡")
-        #     attacker.msg("%s 已经死亡" % self.key)
-        #     self.set_dead()
-        # else:
-        #     if not self.ndb.is_attacking:
-        #         self.db.current_enemy = attacker
-        #         attacker.msg("%s 开始对你发起攻击" % self.key)
-        #         self.start_attacking()
+        if self.db.health <= 0:
+            self.location.msg_contents("%s 重重倒下了" % self.key, exclude=self)
+            self.msg("你已经死亡")
+            attacker.msg("%s 已经死亡" % self.key)
+            attacker.gain_exp(self.db.exp_when_killed, self.db.exp_when_killed)
+            attacker.gain_money(self.db.money_when_killed)
+            self.set_dead()
+        else:
+            if not self.ndb.is_attacking:
+                self.db.current_enemy = attacker
+                attacker.msg("%s 开始对你发起攻击" % self.key)
+                self.start_attacking()
 
     def do_attack(self):
-        # # 解决定时器延时问题：在自身死亡后因为定时器延时触发，还会再攻击对方一次
-        # if self.db.is_dead:
-        #     return
-        # cmd_string = "attack"
-        # # 判断是否已有敌人目标而且目标是否在自己房间内，否则在房间内搜索任意敌人并发动攻击，如果都没有找到，则恢复为不动状态
-        # if self.db.current_enemy and self.db.current_enemy in self.location.contents_get(exclude=self):
-        #     target = self.db.current_enemy
-        # else:
-        #     self.db.current_enemy = self._find_target(self.location)
-        #     target = self.db.current_enemy
-        #
-        # if target:
-        #     if (target.db.health <= 0):
-        #         self.start_idle()
-        #     else:
-        #         self.execute_cmd("%s %s" % (cmd_string, target))
-        # else:
-        #     self.start_idle()
-
         # 判断是否已有敌人目标而且目标是否在自己房间内，否则在房间内搜索任意敌人并发动攻击，如果都没有找到，则恢复为不动状态
         if self.db.current_enemy and self.db.current_enemy in self.location.contents_get(exclude=self):
             target = self.db.current_enemy
@@ -281,6 +221,7 @@ class Monster(DefaultCharacter):
 
     def start_attacking(self):
         self.ndb.is_attacking = True
+        self.do_attack()
         self._set_ticker(self.db.attack_speed, "do_attack")
 
     def start_idle(self):

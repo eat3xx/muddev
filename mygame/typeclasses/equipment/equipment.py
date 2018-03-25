@@ -48,7 +48,7 @@ class Equipment(Object):
         looker sees when looking at this object.
         """
         # text = super(Equipment, self).return_appearance(looker)
-        cscore = "%s%s|n  %s" % (self.db.color, self.db.name, self.db.type) + "\n"  + \
+        cscore = "%s%s|n  %s%s" % (self.db.color, self.db.name, self.db.quality, self.db.type) + "\n"  + \
                  "  伤害: %s" % self.db.damage_points + "\n" + \
                  "  臂力 + %s" % self.db.strength_points + "\n" + \
                  "  身法 + %s" % self.db.agility_points + "\n" + \

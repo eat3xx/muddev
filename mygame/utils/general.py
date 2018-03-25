@@ -2,6 +2,8 @@
 
 import random
 from evennia.utils import utils
+
+from settings.general import Color
 from typeclasses.equipment.equipment import Equipment
 from typeclasses.item.skill.baseskills import BaseSkill
 from typeclasses.item.skill.huashan.skills import SpecialSkill
@@ -195,19 +197,6 @@ def determine_one_hit(be_attacked, attacker):
             attacker.msg("你的攻击未能对 %s 造成任何伤害" % be_attacked.key)
             be_attacked.msg("%s 的攻击未对你造成任何伤害" % attacker.key)
 
-    if be_attacked.db.health <= 0:
-        be_attacked.location.msg_contents("%s 重重倒下了" % be_attacked.key, exclude=be_attacked)
-        be_attacked.msg("你已经死亡")
-        attacker.msg("%s 已经死亡" % be_attacked.key)
-        attacker.msg("111")
-        attacker.gain_exp(be_attacked.db.exp_when_killed, be_attacked.db.exp_when_killed)
-        be_attacked.set_dead()
-    else:
-        if not be_attacked.ndb.is_attacking:
-            be_attacked.db.current_enemy = attacker
-            attacker.msg("%s 开始对你发起攻击" % be_attacked.key)
-            be_attacked.start_attacking()
-
 def holds(caller, obj):
     contents = caller.contents
     for item in contents:
@@ -215,7 +204,19 @@ def holds(caller, obj):
             return True
     return False
 
-# def holds(caller, obj):
+def show_me_the_money(money):
+    gold = money / 100
+    silver = money % 100
+    if gold and silver:
+        return "%s两%s黄金|n%s两白银" % (gold, Color.YELLOW, silver)
+    elif gold:
+        return "%s两%s黄金|n0两白银" % (gold,Color.YELLOW)
+    elif silver:
+        return "%s两白银" % silver
+    else:
+        return "0两%s黄金|n0两白银" % Color.YELLOW
+
+        # def holds(caller, obj):
 #     print "1"
 #     try:
 #         print "2"

@@ -534,11 +534,11 @@ INLINEFUNC_MODULES = ["evennia.utils.inlinefuncs",
 #      character (disconnects multiplets)
 #  3 - like mode 2, except multiple sessions can puppet one character, each
 #      session getting the same data.
-MULTISESSION_MODE = 0
+MULTISESSION_MODE = 2
 # The maximum number of characters allowed for MULTISESSION_MODE 2,3. This is
 # checked by the default ooc char-creation command. Forced to 1 for
 # MULTISESSION_MODE 0 and 1.
-MAX_NR_CHARACTERS = 1
+MAX_NR_CHARACTERS = 5
 # The access hierarchy, in climbing order. A higher permission in the
 # hierarchy includes access of all levels below it. Used by the perm()/pperm()
 # lock functions, which accepts both plural and singular (Admin & Admins)
